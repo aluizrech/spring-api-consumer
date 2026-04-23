@@ -1,104 +1,89 @@
 package com.coffops.springapiconsumer.controller;
 
-import com.coffops.springapiconsumer.exception.CepNotFoundException;
-import com.coffops.springapiconsumer.exception.InvalidCepException;
-import com.coffops.springapiconsumer.model.Address;
-import com.coffops.springapiconsumer.service.CepService;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@WebMvcTest(CepController.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CepControllerIntegrationTest {
 
+    @LocalServerPort
+    private int port;
+
     @Autowired
-    private MockMvc mockMvc;
+    private TestRestTemplate restTemplate;
 
-    @MockBean
-    private CepService cepService;
-
-    private Address buildAddress(String cep, String street, String neighborhood, String localidade, String state) {
-        Address address = new Address();
-        address.setZipCode(cep);
-        address.setStreet(street);
-        address.setComplement("");
-        address.setNeighborhood(neighborhood);
-        address.setCity(localidade);
-        address.setState(state);
-        return address;
+    private String url(String cep) {
+        return "http://localhost:" + port + "/api/cep/" + cep;
     }
 
     // ── Good scenarios ────────────────────────────────────────────────────────
 
     @Test
-    void shouldReturn200WithAddressForValidCep_88020231() throws Exception {
-        Address address = buildAddress("88020-231", "Rua Marechal Guilherme", "Centro", "Florianópolis", "SC");
-        when(cepService.getAddress("88020231")).thenReturn(address);
+    void shouldReturn200WithAddressForValidCep_88020231() {
+        ResponseEntity<String> response = restTemplate.getForEntity(url("88020231"), String.class);
 
-        mockMvc.perform(get("/api/cep/88020231").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.cep").value("88020-231"))
-                .andExpect(jsonPath("$.localidade").value("Florianópolis"))
-                .andExpect(jsonPath("$.uf").value("SC"));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).contains("88020-231");
+        assertThat(response.getBody()).contains("SC");
+        assertThat(response.getBody()).contains("Florianópolis");
+        assertThat(response.getBody()).contains("Rua 13 de Maio");
     }
 
     @Test
-    void shouldReturn200WithAddressForValidCep_88137250() throws Exception {
-        Address address = buildAddress("88137-250", "Rua das Flores", "Jardim das Flores", "Palhoça", "SC");
-        when(cepService.getAddress("88137250")).thenReturn(address);
+    void shouldReturn200WithAddressForValidCep_88137250() {
+        ResponseEntity<String> response = restTemplate.getForEntity(url("88137250"), String.class);
 
-        mockMvc.perform(get("/api/cep/88137250").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.cep").value("88137-250"))
-                .andExpect(jsonPath("$.localidade").value("Palhoça"))
-                .andExpect(jsonPath("$.uf").value("SC"));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).contains("88137-250");
+        assertThat(response.getBody()).contains("SC");
+        assertThat(response.getBody()).contains("Rua das Cerejeiras");
+        assertThat(response.getBody()).contains("Pedra Branca");
+        assertThat(response.getBody()).contains("Palhoça");
     }
 
     @Test
-    void shouldReturn200WithAddressForValidCep_88142360() throws Exception {
-        Address address = buildAddress("88142-360", "Rua das Acácias", "Bela Vista", "São José", "SC");
-        when(cepService.getAddress("88142360")).thenReturn(address);
+    void shouldReturn200WithAddressForValidCep_88142360() {
+        ResponseEntity<String> response = restTemplate.getForEntity(url("88142360"), String.class);
 
-        mockMvc.perform(get("/api/cep/88142360").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.cep").value("88142-360"))
-                .andExpect(jsonPath("$.localidade").value("São José"))
-                .andExpect(jsonPath("$.uf").value("SC"));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).contains("88142-360");
+        assertThat(response.getBody()).contains("SC");
+        assertThat(response.getBody()).contains("Santo Amaro da Imperatriz");
+        assertThat(response.getBody()).contains("de 3115/3116 ao fim");
+        assertThat(response.getBody()).contains("Rua São Sebastião");
     }
 
     // ── Bad scenarios ─────────────────────────────────────────────────────────
 
     @Test
-    void shouldReturn404WhenCepDoesNotExist_88140000() throws Exception {
-        when(cepService.getAddress("88140000")).thenThrow(new CepNotFoundException("88140000"));
+    void shouldReturn404WhenCepDoesNotExist_88140000() {
+        ResponseEntity<String> response = restTemplate.getForEntity(url("88140000"), String.class);
 
-        mockMvc.perform(get("/api/cep/88140000").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("CEP not found: 88140000"));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        Assertions.assertEquals("{\"error\":\"CEP not found: 88140000\"}", response.getBody());
     }
 
     @Test
-    void shouldReturn404WhenCepDoesNotExist_11140000() throws Exception {
-        when(cepService.getAddress("11140000")).thenThrow(new CepNotFoundException("11140000"));
+    void shouldReturn404WhenCepDoesNotExist_11140000() {
+        ResponseEntity<String> response = restTemplate.getForEntity(url("11140000"), String.class);
 
-        mockMvc.perform(get("/api/cep/11140000").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("CEP not found: 11140000"));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        Assertions.assertEquals("{\"error\":\"CEP not found: 11140000\"}", response.getBody());
     }
 
     @Test
-    void shouldReturn400WhenCepFormatIsInvalid_111() throws Exception {
-        when(cepService.getAddress("111")).thenThrow(new InvalidCepException("111"));
+    void shouldReturn400WhenCepFormatIsInvalid_111() {
+        ResponseEntity<String> response = restTemplate.getForEntity(url("111"), String.class);
 
-        mockMvc.perform(get("/api/cep/111").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Invalid CEP format: 111"));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).contains("Invalid CEP format: 111");
     }
 }

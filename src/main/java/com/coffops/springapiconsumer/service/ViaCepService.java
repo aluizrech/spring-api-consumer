@@ -28,7 +28,11 @@ public class ViaCepService implements CepService {
                 throw new CepNotFoundException(cep);
             }
             ResponseEntity<Address> response = restTemplate.exchange(url, HttpMethod.GET, null, Address.class);
-            return response.getBody();
+            Address address = response.getBody();
+            if (address == null || address.getZipCode() == null) {
+                throw new CepNotFoundException(cep);
+            }
+            return address;
         } catch (HttpClientErrorException.BadRequest e) {
             throw new InvalidCepException(cep);
         }
