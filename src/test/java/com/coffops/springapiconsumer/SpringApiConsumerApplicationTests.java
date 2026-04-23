@@ -8,6 +8,7 @@ class SpringApiConsumerApplicationTests {
 
     @Test
     void contextLoads() {
+        // Verifies the Spring application context loads successfully
     }
 
 }

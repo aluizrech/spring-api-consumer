@@ -4,12 +4,12 @@ import com.coffops.springapiconsumer.exception.CepNotFoundException;
 import com.coffops.springapiconsumer.exception.InvalidCepException;
 import com.coffops.springapiconsumer.model.Address;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.client.RestOperations;
 
 import java.util.Map;
 
@@ -22,8 +22,8 @@ public class ViaCepService implements CepService {
     public Address getAddress(String cep) {
         String url = "https://viacep.com.br/ws/" + cep + "/json/";
         try {
-            ResponseEntity<Map> raw = restTemplate.exchange(url, HttpMethod.GET, null, Map.class);
-            Map body = raw.getBody();
+            ResponseEntity<Map<String, Object>> raw = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<Map<String, Object>>() {});
+            Map<String, Object> body = raw.getBody();
             if (body != null && Boolean.TRUE.equals(body.get("erro"))) {
                 throw new CepNotFoundException(cep);
             }
