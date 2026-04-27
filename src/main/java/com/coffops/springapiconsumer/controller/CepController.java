@@ -20,7 +20,7 @@ public class CepController {
     }
 
     @GetMapping("/{cepSearch}")
-    private ResponseEntity<?> getAddressInformation(@PathVariable("cepSearch") String cepSearch){
+    public ResponseEntity<?> getAddressInformation(@PathVariable("cepSearch") String cepSearch){
         Address address = cepService.getAddress(cepSearch);
         return ResponseEntity.ok(address);
     }
